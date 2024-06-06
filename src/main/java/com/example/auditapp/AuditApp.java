@@ -19,6 +19,7 @@ public class AuditApp extends Application {
     private Map<String, List<Question>> chapters;
     private List<String> chapterNames;
     private int currentChapterIndex = 0;
+    private int currentQuestionIndex = 0;
     private int totalScore = 0;
 
     @Override
@@ -40,11 +41,18 @@ public class AuditApp extends Application {
         nextButton.setOnAction(event -> {
             if (areAllQuestionsAnswered(optionsGroup)) {
                 updateTotalScore(optionsGroup);
-                currentChapterIndex++;
-                if (currentChapterIndex < questions.size()) {
-                    displayChapter(chapterLabel, questionLabel, optionsBox, optionsGroup);
+                currentQuestionIndex++;
+                List<Question> chapterQuestions = chapters.get(chapterNames.get(currentChapterIndex));
+                if (currentQuestionIndex < chapterQuestions.size()) {
+                    displayQuestion(chapterQuestions.get(currentQuestionIndex), questionLabel, optionsBox, optionsGroup);
                 } else {
-                    showResults(primaryStage);
+                    currentQuestionIndex = 0;
+                    currentChapterIndex++;
+                    if (currentChapterIndex < chapterNames.size()) {
+                        displayChapter(chapterLabel, questionLabel, optionsBox, optionsGroup);
+                    } else {
+                        showResults(primaryStage);
+                    }
                 }
             } else {
                 Alert alert = new Alert(Alert.AlertType.WARNING, "Please answer all questions in the current chapter before proceeding.");
@@ -55,7 +63,7 @@ public class AuditApp extends Application {
         root.getChildren().addAll(chapterLabel, questionLabel, optionsBox, nextButton);
         displayChapter(chapterLabel, questionLabel, optionsBox, optionsGroup);
 
-        Scene scene = new Scene(root, 400, 300);
+        Scene scene = new Scene(root, 600, 300);
         primaryStage.setScene(scene);
         primaryStage.show();
     }
@@ -65,10 +73,7 @@ public class AuditApp extends Application {
         List<Question> chapterQuestions = chapters.get(currentChapter);
 
         chapterLabel.setText("Chapter: " + currentChapter);
-        displayQuestion(chapterQuestions.get(0), questionLabel, optionsBox, optionsGroup);
-
-        // Clear previous answers
-        optionsGroup.getToggles().forEach(toggle -> toggle.setSelected(false));
+        displayQuestion(chapterQuestions.get(currentQuestionIndex), questionLabel, optionsBox, optionsGroup);
     }
 
     private void displayQuestion(Question question, Label questionLabel, VBox optionsBox, ToggleGroup optionsGroup) {
@@ -82,6 +87,9 @@ public class AuditApp extends Application {
             optionButton.setToggleGroup(optionsGroup);
             optionsBox.getChildren().add(optionButton);
         }
+
+        // Clear previous answers
+        optionsGroup.getToggles().forEach(toggle -> toggle.setSelected(false));
     }
 
     private boolean areAllQuestionsAnswered(ToggleGroup optionsGroup) {
