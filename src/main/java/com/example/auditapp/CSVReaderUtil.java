@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CSVReaderUtil {
+
     public static List<Question> readQuestionsFromCSV(String filePath) {
         List<Question> questions = new ArrayList<>();
         try (CSVReader reader = new CSVReader(new FileReader(filePath))) {
@@ -30,5 +31,23 @@ public class CSVReaderUtil {
             e.printStackTrace();
         }
         return questions;
+    }
+
+    public static List<BestPractice> readSuggestionFromCSV(String filePath) {
+        List<BestPractice> bestPractices = new ArrayList<>();
+        try (CSVReader reader = new CSVReader(new FileReader(filePath))){
+            String[] line;
+            reader.skip(1);
+            while ((line = reader.readNext()) != null) {
+                String chapter = line[0];
+                String category = line[1];
+                String practice = line[2];
+
+                bestPractices.add(new BestPractice(chapter, category, practice));
+            }
+        } catch (IOException | CsvValidationException e) {
+            e.printStackTrace();
+        }
+        return bestPractices;
     }
 }
