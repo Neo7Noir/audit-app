@@ -2,10 +2,14 @@ package com.example.auditapp;
 
 import javafx.application.Application;
 import javafx.collections.FXCollections;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.scene.text.Text;
+import javafx.scene.text.TextFlow;
 import javafx.stage.Stage;
 
 import java.util.*;
@@ -25,7 +29,6 @@ public class AuditApp extends Application {
     // Best Practices fields
     private List<BestPractice> bestPractices;
     private Map<String, List<BestPractice>> bestPracticesByChapter;
-    private Map<String, Integer> chapterThresholds;
 
     @Override
     public void start(Stage primaryStage) {
@@ -40,13 +43,12 @@ public class AuditApp extends Application {
         primaryStage.setTitle("Audit App");
 
         VBox root = new VBox(10);
+        root.setAlignment(Pos.CENTER);
 
         // Buttons for switching views
         Button quizButton = new Button("Start Quiz");
-//        Button bestPracticesButton = new Button("View Best Practices");
 
         quizButton.setOnAction(event -> startQuiz(primaryStage));
-//        bestPracticesButton.setOnAction(event -> showBestPractices(primaryStage));
 
         root.getChildren().addAll(quizButton);
 
@@ -57,6 +59,8 @@ public class AuditApp extends Application {
 
     private void startQuiz(Stage primaryStage) {
         VBox root = new VBox(10);
+        root.setAlignment(Pos.CENTER);
+        root.setPadding(new javafx.geometry.Insets(10));
 
         Label chapterLabel = new Label();
         Label questionLabel = new Label();
@@ -75,9 +79,9 @@ public class AuditApp extends Application {
                     System.out.println("Chapter " + chapterNames.get(currentChapterIndex) + " completed.");
                     double percentage = calculatePercentage(chapterNames.get(currentChapterIndex));
                     System.out.println("Percentage obtained: " + percentage + "%");
-                    List<BestPractice> bestPractices1 = getSuggestedBestPractices(bestPractices, percentage);
-                    for (BestPractice practice: bestPractices1) {
-                        System.out.println(practice.toString());
+                    List<BestPractice> suggestedBestPractices = getSuggestedBestPractices(chapterNames.get(currentChapterIndex), percentage);
+                    for (BestPractice practice : suggestedBestPractices) {
+                        System.out.println("Suggested Best Practice: " + practice.toString());
                     }
                     currentQuestionIndex = 0;
                     currentChapterIndex++;
@@ -141,6 +145,9 @@ public class AuditApp extends Application {
 
     private void showResults(Stage stage) {
         VBox resultsBox = new VBox(10);
+        resultsBox.setAlignment(Pos.CENTER);
+        resultsBox.setPadding(new javafx.geometry.Insets(10));
+
         Label resultsLabel = new Label("Total Score: " + totalScore);
         resultsBox.getChildren().add(resultsLabel);
 
@@ -161,6 +168,9 @@ public class AuditApp extends Application {
 
     private void showAssignedBestPractices(Stage stage) {
         VBox assignedBestPracticesBox = new VBox(10);
+        assignedBestPracticesBox.setAlignment(Pos.CENTER);
+        assignedBestPracticesBox.setPadding(new javafx.geometry.Insets(10));
+
         Label titleLabel = new Label("Assigned Best Practices");
         assignedBestPracticesBox.getChildren().add(titleLabel);
 
@@ -168,10 +178,11 @@ public class AuditApp extends Application {
             List<BestPractice> chapterBestPractices = bestPracticesByChapter.getOrDefault(chapter, new ArrayList<>());
             double scorePercentage = calculatePercentage(chapter);
 
-            List<BestPractice> suggestedPractices = getSuggestedBestPractices(chapterBestPractices, scorePercentage);
+            List<BestPractice> suggestedPractices = getSuggestedBestPractices(chapter, scorePercentage);
             for (BestPractice bestPractice : suggestedPractices) {
-                Label bestPracticeLabel = new Label("Chapter: " + chapter + " - " + bestPractice.getBestPractice());
-                assignedBestPracticesBox.getChildren().add(bestPracticeLabel);
+                TextFlow bestPracticeTextFlow = new TextFlow(new Text("Chapter: " + chapter + " - " + bestPractice.getBestPractice()));
+                bestPracticeTextFlow.setMaxWidth(580); // Adjust this value as needed
+                assignedBestPracticesBox.getChildren().add(bestPracticeTextFlow);
             }
         }
 
@@ -183,42 +194,17 @@ public class AuditApp extends Application {
         stage.setScene(bestPracticesScene);
     }
 
-    private List<BestPractice> getSuggestedBestPractices(List<BestPractice> bestPractices, double scorePercentage) {
+    private List<BestPractice> getSuggestedBestPractices(String chapter, double scorePercentage) {
+        List<BestPractice> chapterBestPractices = bestPracticesByChapter.getOrDefault(chapter, new ArrayList<>());
         if (scorePercentage <= 25) {
-            return bestPractices.subList(0, 1); // Suggest first best practice
+            return chapterBestPractices.subList(0, Math.min(1, chapterBestPractices.size())); // Suggest first best practice
         } else if (scorePercentage <= 50) {
-            return bestPractices.subList(0, Math.min(2, bestPractices.size())); // Suggest first two best practices
+            return chapterBestPractices.subList(0, Math.min(2, chapterBestPractices.size())); // Suggest first two best practices
         } else if (scorePercentage <= 75) {
-            return bestPractices.subList(0, Math.min(3, bestPractices.size())); // Suggest all best practices
+            return chapterBestPractices.subList(0, Math.min(3, chapterBestPractices.size())); // Suggest first three best practices
         } else {
-            return bestPractices.subList(0, Math.min(4, bestPractices.size()));
+            return chapterBestPractices; // Suggest all best practices
         }
-    }
-
-    private void showBestPractices(Stage primaryStage) {
-        TableView<BestPractice> tableView = new TableView<>();
-
-        TableColumn<BestPractice, String> chapterColumn = new TableColumn<>("Chapter");
-        chapterColumn.setCellValueFactory(new PropertyValueFactory<>("chapter"));
-
-        TableColumn<BestPractice, String> categoryColumn = new TableColumn<>("Category");
-        categoryColumn.setCellValueFactory(new PropertyValueFactory<>("category"));
-
-        TableColumn<BestPractice, String> bestPracticeColumn = new TableColumn<>("Best Practice");
-        bestPracticeColumn.setCellValueFactory(new PropertyValueFactory<>("bestPractice"));
-
-
-        tableView.getColumns().addAll(chapterColumn, categoryColumn, bestPracticeColumn);
-        tableView.setItems(FXCollections.observableArrayList(bestPractices));
-
-        Button backButton = new Button("Back to Main Menu");
-        backButton.setOnAction(event -> start(primaryStage));
-
-        VBox root = new VBox(10);
-        root.getChildren().addAll(tableView, backButton);
-
-        Scene scene = new Scene(root, 600, 400);
-        primaryStage.setScene(scene);
     }
 
     private long calculatePercentage(String chapterName) {
